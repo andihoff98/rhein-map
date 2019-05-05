@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Leaflet OverPass Layer demo page</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
+    <link rel="stylesheet" href="OverPassLayer.css" />
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet-src.js"></script>
+    <script src="OverPassLayer.bundle.js"></script>
+
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        html,
+        body,
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .seamarker {
+          background-color: none;
+          border: none;
+          color: white;
+        }
+        .dot-red {
+          height: 25px;
+          width: 25px;
+          background-color: red;
+          border-radius: 50%;
+          display: inline-block;
+        }
+        .sqr-red {
+          height: 25px;
+          width: 25px;
+          background-color: red;
+          display: inline-block;
+        }
+        .sqr-green {
+          height: 25px;
+          width: 25px;
+          background-color: green;
+          display: inline-block;
+        }
+        .dot-green {
+          height: 25px;
+          width: 25px;
+          background-color: green;
+          border-radius: 50%;
+          display: inline-block;
+        }
+        .dot-slip {
+          height: 25px;
+          width: 25px;
+          background-color: white;
+          border-radius: 50%;
+          display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        //var osm = new L.TileLayer('http://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=6170aad10dfd42a38d4d8c709a536f38');
+        var osm = new L.TileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {subdomains:['mt0','mt1','mt2','mt3']});
+
+        var map = new L.Map('map').addLayer(osm).setView(new L.LatLng(49.8531, 8.3835), 14);
+
+        var opl = new L.OverPassLayer({
+            minZoom: 12,
+            endPoint: 'https://overpass.kumi.systems/api/interpreter/',
+            query: 'node({{bbox}})["seamark:type"];out;',
+            minZoomIndicatorOptions: {
+                position: 'topright',
+                minZoomMessage: 'Current zoom level: CURRENTZOOM - All data at level: MINZOOMLEVEL'
+            }, onSuccess: function(data) {
+                console.log(data);
+                for (var i = 0; i < data.elements.length; i++) {
+                  var cur_tags = data.elements[i].tags;
+                  if (cur_tags["seamark:type"] == "distance_mark") {
+                    var icon = L.divIcon({html: cur_tags["seamark:distance_mark:distance"], className: "seamarker"});
+                    var marker = L.marker([data.elements[i].lat, data.elements[i].lon], {icon: icon}).addTo(map);
+                  } else if (cur_tags["seamark:type"] == "buoy_lateral") {
+                    if (cur_tags["seamark:topmark:colour"] == "red") {
+                      var icon = L.divIcon({html: "", className: "dot-red"});
+                    } else if (cur_tags["seamark:topmark:colour"] == "green") {
+                      var icon = L.divIcon({html: "", className: "dot-green"});
+                    }
+                    var marker = L.marker([data.elements[i].lat, data.elements[i].lon], {icon: icon}).addTo(map);
+                  } else if (cur_tags["seamark:type"] == "beacon_lateral") {
+                    if (cur_tags["seamark:daymark:colour"] == "red") {
+                      var icon = L.divIcon({html: "", className: "sqr-red"});
+                    } else if (cur_tags["seamark:daymark:colour"] == "green") {
+                      var icon = L.divIcon({html: "", className: "sqr-green"});
+                    }
+                    var marker = L.marker([data.elements[i].lat, data.elements[i].lon], {icon: icon}).addTo(map);
+                  } else if (cur_tags["seamark:small_craft_facility:category"] == "slipway") {
+                    var icon = L.divIcon({html: "", className: "dot-slip"});
+                    var marker = L.marker([data.elements[i].lat, data.elements[i].lon], {icon: icon}).addTo(map);
+                  }
+                }
+            }
+        });
+        map.addLayer(opl);
+    </script>
+</body>
+
+</html>
